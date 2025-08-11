@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
-import openai
+from openai import OpenAI
 import os
 from dotenv import load_dotenv
 import json
@@ -12,7 +12,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Configure OpenAI
-openai.api_key = os.getenv('OPENAI_API_KEY')
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # Fred AI's personality and system prompt
 FRED_SYSTEM_PROMPT = """You are Fred AI, a friendly, helpful, and knowledgeable AI assistant. You have a warm personality and always try to be helpful while maintaining a conversational tone. You can help with various tasks including:
@@ -39,7 +39,7 @@ def chat():
             return jsonify({'error': 'No message provided'}), 400
         
         # Create chat completion with Fred AI's personality
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": FRED_SYSTEM_PROMPT},
