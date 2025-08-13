@@ -251,14 +251,16 @@
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <div class="status-indicator"></div>
+            <div class="status-indicator" id="statusIndicator"></div>
             <h1>🤖 Fred AI</h1>
             <p>Your friendly AI assistant</p>
+            <div id="connectionStatus" style="font-size: 0.8rem; margin-top: 5px;"></div>
         </div>
         
         <div class="chat-messages" id="chatMessages">
             <div class="welcome-message">
                 👋 Hi! I'm Fred AI. How can I help you today?
+                <br><small>📶 WiFi connection required for full functionality</small>
             </div>
         </div>
         
@@ -291,6 +293,41 @@
         const sendButton = document.getElementById('sendButton');
         const typingIndicator = document.getElementById('typingIndicator');
 
+        // Function to update connection status
+        function updateConnectionStatus() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const connectionStatus = document.getElementById('connectionStatus');
+            
+            if (navigator.onLine) {
+                statusIndicator.style.background = '#4CAF50';
+                connectionStatus.innerHTML = '📶 Connected to WiFi';
+                connectionStatus.style.color = '#4CAF50';
+            } else {
+                statusIndicator.style.background = '#f44336';
+                connectionStatus.innerHTML = '❌ No WiFi connection';
+                connectionStatus.style.color = '#f44336';
+            }
+        }
+
+        // Check network connectivity on page load
+        window.addEventListener('load', function() {
+            updateConnectionStatus();
+            if (!navigator.onLine) {
+                addMessage('⚠️ Please connect to WiFi to use Fred AI. I need internet connection to work properly.', 'bot');
+            }
+        });
+
+        // Monitor network status changes
+        window.addEventListener('online', function() {
+            updateConnectionStatus();
+            addMessage('✅ WiFi connected! Fred AI is ready to help!', 'bot');
+        });
+
+        window.addEventListener('offline', function() {
+            updateConnectionStatus();
+            addMessage('⚠️ WiFi disconnected. Please reconnect to use Fred AI.', 'bot');
+        });
+
         // Auto-resize textarea
         messageInput.addEventListener('input', function() {
             this.style.height = 'auto';
@@ -312,6 +349,12 @@
             const message = messageInput.value.trim();
             if (!message) return;
 
+            // Check if user is online
+            if (!navigator.onLine) {
+                addMessage('⚠️ Please connect to WiFi to use Fred AI. I need internet connection to work properly.', 'bot');
+                return;
+            }
+
             // Add user message
             addMessage(message, 'user');
             messageInput.value = '';
@@ -331,7 +374,7 @@
             .then(response => response.json())
             .then(data => {
                 hideTypingIndicator();
-                if (data.status === 'success') {
+                if (data.status === 'success' || data.status === 'success (mock)') {
                     addMessage(data.response, 'bot');
                 } else {
                     addMessage('Sorry, I encountered an error. Please try again.', 'bot');
@@ -339,7 +382,7 @@
             })
             .catch(error => {
                 hideTypingIndicator();
-                addMessage('Sorry, I\'m having trouble connecting. Please check your internet connection.', 'bot');
+                addMessage('⚠️ No internet connection detected. Please connect to WiFi to use Fred AI.', 'bot');
                 console.error('Error:', error);
             });
         }
