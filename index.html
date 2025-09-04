@@ -55,12 +55,26 @@
         .status-indicator {
             position: absolute;
             top: 20px;
-            right: 20px;
+            right: 60px;
             width: 12px;
             height: 12px;
             background: #4CAF50;
             border-radius: 50%;
             animation: pulse 2s infinite;
+        }
+
+        .robot-settings {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            user-select: none;
+        }
+
+        .robot-settings:hover {
+            transform: scale(1.1);
         }
 
         @keyframes pulse {

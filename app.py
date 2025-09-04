@@ -1,19 +1,52 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_cors import CORS
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
 import json
 import random
+from datetime import datetime
+import sqlite3
+import hashlib
+import secrets
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = secrets.token_hex(16)
 CORS(app)
 
 # Configure OpenAI
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+# Database initialization
+def init_db():
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                first_name TEXT NOT NULL,
+                last_name TEXT NOT NULL,
+                birthday TEXT NOT NULL,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                display_name TEXT NOT NULL,
+                wifi_network TEXT,
+                wifi_password TEXT,
+                email TEXT,
+                phone TEXT,
+                avatar TEXT DEFAULT '🤖',
+                theme TEXT DEFAULT 'default',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+    conn.commit()
+    conn.close()
+
+# Initialize database
+init_db()
 
 # Mock responses for when OpenAI API is unavailable
 MOCK_RESPONSES = {
@@ -75,12 +108,115 @@ FRED_SYSTEM_PROMPT = """You are Fred AI, a friendly, helpful, and knowledgeable 
 
 Always respond in a friendly, helpful manner while being accurate and informative. If you're not sure about something, be honest about it."""
 
+def hash_password(password):
+    """Hash a password using SHA-256"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(password, password_hash):
+    """Verify a password against its hash"""
+    return hash_password(password) == password_hash
+
 @app.route('/')
 def home():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
     return render_template('index.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        conn = sqlite3.connect('users.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+        user = cursor.fetchone()
+        conn.close()
+        
+        if user and verify_password(password, user[5]):  # user[5] is password_hash
+            session['user_id'] = user[0]
+            session['username'] = user[4]
+            session['display_name'] = user[6]
+            return redirect(url_for('home'))
+        else:
+            flash('Invalid username or password')
+    
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        birthday = request.form['birthday']
+        username = request.form['username']
+        password = request.form['password']
+        display_name = request.form['display_name']
+        
+        # Hash the password
+        password_hash = hash_password(password)
+        
+        try:
+            conn = sqlite3.connect('users.db')
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO users (first_name, last_name, birthday, username, password_hash, display_name)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (first_name, last_name, birthday, username, password_hash, display_name))
+            conn.commit()
+            conn.close()
+            
+            flash('Registration successful! Please log in.')
+            return redirect(url_for('login'))
+        except sqlite3.IntegrityError:
+            flash('Username already exists. Please choose another.')
+        except Exception as e:
+            flash(f'Registration failed: {str(e)}')
+    
+    return render_template('register.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+@app.route('/settings')
+def settings():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT wifi_network, wifi_password FROM users WHERE id = ?', (session['user_id'],))
+    user = cursor.fetchone()
+    conn.close()
+    
+    return render_template('settings.html', wifi_network=user[0] if user else '', wifi_password=user[1] if user else '')
+
+@app.route('/update_wifi', methods=['POST'])
+def update_wifi():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    wifi_network = request.form['wifi_network']
+    wifi_password = request.form['wifi_password']
+    
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE users SET wifi_network = ?, wifi_password = ? WHERE id = ?', 
+                  (wifi_network, wifi_password, session['user_id']))
+    conn.commit()
+    conn.close()
+    
+    flash('WiFi settings updated successfully!')
+    return redirect(url_for('settings'))
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
     try:
         data = request.get_json()
         user_message = data.get('message', '')
