@@ -55,7 +55,7 @@ Fred AI is a modern, beautiful AI chatbot built with Python Flask and a responsi
 Create a `.env` file in the project root with the following variables:
 
 ```
-OPENAI_API_KEY=your_openai_api_key_here
+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
 ```
 
 ### Customizing Fred AI's Personality
