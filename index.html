@@ -12,7 +12,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Glitch', 'Courier New', monospace;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -266,7 +266,7 @@
     <div class="chat-container">
         <div class="chat-header">
             <div class="status-indicator" id="statusIndicator"></div>
-            <div class="robot-settings" id="robotSettings" title="Settings">🤖</div>
+            <div class="robot-settings" id="robotSettings" title="Settings" onclick="openSettings()">🤖</div>
             <h1>🤖 Fred AI</h1>
             <p>Your friendly AI assistant</p>
             <div id="connectionStatus" style="font-size: 0.8rem; margin-top: 5px;"></div>

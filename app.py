@@ -188,11 +188,35 @@ def settings():
     
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT wifi_network, wifi_password FROM users WHERE id = ?', (session['user_id'],))
+    cursor.execute('''
+        SELECT first_name, last_name, birthday, display_name, email, phone, 
+               avatar, theme, wifi_network, wifi_password 
+        FROM users WHERE id = ?
+    ''', (session['user_id'],))
     user = cursor.fetchone()
     conn.close()
     
-    return render_template('settings.html', wifi_network=user[0] if user else '', wifi_password=user[1] if user else '')
+    if user:
+        user_data = {
+            'first_name': user[0],
+            'last_name': user[1],
+            'birthday': user[2],
+            'display_name': user[3],
+            'email': user[4] or '',
+            'phone': user[5] or '',
+            'avatar': user[6] or '🤖',
+            'theme': user[7] or 'default',
+            'wifi_network': user[8] or '',
+            'wifi_password': user[9] or ''
+        }
+    else:
+        user_data = {
+            'first_name': '', 'last_name': '', 'birthday': '', 'display_name': '',
+            'email': '', 'phone': '', 'avatar': '🤖', 'theme': 'default',
+            'wifi_network': '', 'wifi_password': ''
+        }
+    
+    return render_template('settings.html', user=user_data)
 
 @app.route('/update_wifi', methods=['POST'])
 def update_wifi():
@@ -210,6 +234,37 @@ def update_wifi():
     conn.close()
     
     flash('WiFi settings updated successfully!')
+    return redirect(url_for('settings'))
+
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    first_name = request.form['first_name']
+    last_name = request.form['last_name']
+    birthday = request.form['birthday']
+    display_name = request.form['display_name']
+    email = request.form['email']
+    phone = request.form['phone']
+    avatar = request.form['avatar']
+    theme = request.form['theme']
+    
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE users SET 
+        first_name = ?, last_name = ?, birthday = ?, display_name = ?, 
+        email = ?, phone = ?, avatar = ?, theme = ?
+        WHERE id = ?
+    ''', (first_name, last_name, birthday, display_name, email, phone, avatar, theme, session['user_id']))
+    conn.commit()
+    conn.close()
+    
+    # Update session
+    session['display_name'] = display_name
+    
+    flash('Profile updated successfully!')
     return redirect(url_for('settings'))
 
 @app.route('/api/chat', methods=['POST'])
