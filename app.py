@@ -24,24 +24,24 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 def init_db():
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
-            cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                first_name TEXT NOT NULL,
-                last_name TEXT NOT NULL,
-                birthday TEXT NOT NULL,
-                username TEXT UNIQUE NOT NULL,
-                password_hash TEXT NOT NULL,
-                display_name TEXT NOT NULL,
-                wifi_network TEXT,
-                wifi_password TEXT,
-                email TEXT,
-                phone TEXT,
-                avatar TEXT DEFAULT '🤖',
-                theme TEXT DEFAULT 'default',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            first_name TEXT NOT NULL,
+            last_name TEXT NOT NULL,
+            birthday TEXT NOT NULL,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            display_name TEXT NOT NULL,
+            wifi_network TEXT,
+            wifi_password TEXT,
+            email TEXT,
+            phone TEXT,
+            avatar TEXT DEFAULT '🤖',
+            theme TEXT DEFAULT 'default',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     conn.commit()
     conn.close()
 
