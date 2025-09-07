@@ -316,5 +316,5 @@ def health():
     return jsonify({'status': 'healthy', 'bot': 'Fred AI'})
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=5001, threaded=True)
+    app.run(debug=False, host='0.0.0.0', port=5002, threaded=True)
 
