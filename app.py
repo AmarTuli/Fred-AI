@@ -315,6 +315,13 @@ def chat():
 def health():
     return jsonify({'status': 'healthy', 'bot': 'Fred AI'})
 
+# Security: Block any attempts to access environment variables
+@app.route('/env')
+@app.route('/.env')
+@app.route('/api/env')
+def block_env_access():
+    return jsonify({'error': 'Access denied'}), 403
+
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=8080, threaded=True)
 
