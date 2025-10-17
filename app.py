@@ -301,6 +301,8 @@ def chat():
         except Exception as api_error:
             # If OpenAI API fails, use mock response
             print(f"OpenAI API error: {api_error}")
+            print(f"Error type: {type(api_error).__name__}")
+            print(f"Error details: {str(api_error)}")
             mock_response = get_mock_response(user_message)
             
             return jsonify({
